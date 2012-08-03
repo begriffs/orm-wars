@@ -7,7 +7,6 @@ require 'yaml'
 ActiveRecord::Base.establish_connection(
   YAML::load(File.open('db/config.yml'))
 )
-ActiveRecord::Base.logger = Logger.new(STDOUT)
 
 class User < ActiveRecord::Base
   belongs_to :group
@@ -17,15 +16,20 @@ class Group < ActiveRecord::Base
 end
 
 # Do something in the DB...when you awake it will have been a dream
-def dream title
+def dream title, &blk
+  time = nil
   puts "### Dreaming of #{title} #{"#"*50}" if title
   ActiveRecord::Base.transaction do
-    yield
+    build_groups
+    ActiveRecord::Base.logger = Logger.new(STDOUT)
+    time = Benchmark.measure &blk
     raise ActiveRecord::Rollback
   end
+  ActiveRecord::Base.logger = nil
+  puts "### Time elapsed #{time}"
 end
 
-dream "finding empty groups" do
+def build_groups
   groups = []
   3.times { groups << Group.new }
   Group.import groups
@@ -37,6 +41,24 @@ dream "finding empty groups" do
     users << User.new(group: groups[i%2])
   end
   User.import users
+end
 
-  puts Group.first.users.count
+dream "finding empty groups" do
+  empties = Group.all(
+    :joins => "LEFT OUTER JOIN users u ON u.group_id = groups.id",
+    :conditions => "u.group_id IS NULL")
+  puts empties.count
+end
+
+dream "listing count of users in each group by repeated queries" do
+  counts = []
+  Group.all.each do |g|
+    counts << g.users.count
+  end
+  puts counts
+end
+
+dream "listing count of users in each group by using group-by" do
+  counts = User.count(group: 'users.group_id')
+  puts counts
 end
