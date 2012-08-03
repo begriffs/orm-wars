@@ -18,7 +18,8 @@ end
 # Do something in the DB...when you awake it will have been a dream
 def dream title, &blk
   time = nil
-  puts "### Dreaming of #{title} #{"#"*50}" if title
+  puts "#"*80
+  puts "### Dreaming of #{title}" if title
   ActiveRecord::Base.transaction do
     build_groups
     ActiveRecord::Base.logger = Logger.new(STDOUT)
@@ -26,7 +27,8 @@ def dream title, &blk
     raise ActiveRecord::Rollback
   end
   ActiveRecord::Base.logger = nil
-  puts "### Time elapsed #{time}"
+  puts "### Time elapsed #{time.to_s.strip}"
+  puts "#"*80 + "\n\n\n"
 end
 
 def build_groups
