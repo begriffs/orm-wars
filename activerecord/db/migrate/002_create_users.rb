@@ -1,8 +1,8 @@
 class CreateUsers < ActiveRecord::Migration
   def self.up
-    create_table :users do |t|
-      t.column :name, :string, :null => false
-    end
+    create_table :users
+    add_column :users, :group_id, :integer
+    add_foreign_key :users, :groups
   end
 
   def self.down
