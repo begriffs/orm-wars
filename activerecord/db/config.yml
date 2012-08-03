@@ -1,0 +1,4 @@
+adapter:  'postgresql'
+database: 'activerecord_test'
+username: 'j'
+host:     'localhost'
