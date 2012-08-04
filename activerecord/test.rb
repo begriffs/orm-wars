@@ -32,35 +32,50 @@ def dream title, &blk
 end
 
 def build_groups
-  groups = []
-  3.times { groups << Group.new }
-  Group.import groups
-
+  Group.import [Group.new]*3
   groups = Group.find(:all, :limit => 2)
-
-  users = []
-  100.times do |i|
-    users << User.new(group: groups[i%2])
-  end
-  User.import users
+  User.import (0...100).map { |i| User.new(group: groups[i%2]) }
 end
 
-dream "finding empty groups" do
+dream "finding empty groups by looping" do
+  puts Group.all.select { |g| g.users.count == 0 }
+end
+
+dream "finding empty groups with left join" do
   empties = Group.all(
     :joins => "LEFT OUTER JOIN users u ON u.group_id = groups.id",
     :conditions => "u.group_id IS NULL")
   puts empties.count
 end
 
-dream "listing count of users in each group by repeated queries" do
-  counts = []
-  Group.all.each do |g|
-    counts << g.users.count
-  end
-  puts counts
+dream "finding empty groups with includes" do
+  empties = Group.includes(:users).where('users.group_id' => nil).all
+  puts empties.count
 end
 
-dream "listing count of users in each group by using group-by" do
-  counts = User.count(group: 'users.group_id')
-  puts counts
+dream "finding empty groups with subquery" do
+  puts ActiveRecord::Base.connection.execute(<<query
+    select id from groups
+    where not exists
+      (select 1 from users where group_id = groups.id)
+query
+  ).to_a
+end
+
+dream "listing count of users in each group by repeated queries" do
+  Group.all.each do |g|
+    puts g.users.count
+  end
+end
+
+dream "listing count of users in each group ala Jaymes" do
+  Group.includes(:users).map {|group| puts group.id, group.users.count }
+end
+
+dream "listing count of users in each group using sql subquery" do
+  puts ActiveRecord::Base.connection.execute(<<query
+    select id, (select count(1) from users where group_id = groups.id)
+    from groups
+query
+  ).to_a
 end
