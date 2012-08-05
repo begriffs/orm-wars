@@ -33,7 +33,7 @@ end
 
 def build_groups
   Group.import [Group.new]*3
-  groups = Group.find(:all, :limit => 2)
+  groups = Group.find(:all, limit: 2)
   User.import (0...100).map { |i| User.new(group: groups[i%2]) }
 end
 
@@ -43,8 +43,8 @@ end
 
 dream "finding empty groups with left join" do
   empties = Group.all(
-    :joins => "LEFT OUTER JOIN users u ON u.group_id = groups.id",
-    :conditions => "u.group_id IS NULL")
+    joins:      "LEFT OUTER JOIN users u ON u.group_id = groups.id",
+    conditions: "u.group_id IS NULL")
   puts empties.count
 end
 
@@ -78,4 +78,18 @@ dream "listing count of users in each group using sql subquery" do
     from groups
 query
   ).to_a
+end
+
+dream "listing count of users in each group using custom select" do
+  puts Group.all(
+    select: "id, (select count(1) from users where group_id = groups.id)",
+  )
+end
+
+dream "listing count of users in each group using joins" do
+  puts Group.all(
+    select: "groups.id, count(u.group_id) as users_count",
+    joins:  "LEFT OUTER JOIN users u ON u.group_id = groups.id",
+    group:  "groups.id"
+  )
 end
