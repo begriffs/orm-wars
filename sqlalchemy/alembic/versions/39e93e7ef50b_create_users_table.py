@@ -12,8 +12,10 @@ down_revision = None
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.schema import CreateSequence, DropSequence
 
 def upgrade():
+  op.execute(CreateSequence(sa.Sequence("user_id_seq")))
   op.create_table(
     'users',
     sa.Column('id', sa.Integer, sa.Sequence('user_id_seq'), primary_key=True)
@@ -21,3 +23,4 @@ def upgrade():
 
 def downgrade():
   op.drop_table('users')
+  op.execute(DropSequence(sa.Sequence("user_id_seq")))
